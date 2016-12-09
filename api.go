@@ -24,9 +24,15 @@ import (
 
     "database/sql"
     _ "github.com/mattn/go-sqlite3"
+	"crypto/des"
+	"crypto/des"
 )
 */
 
+// General variables of the program
+var db *sql.DB
+
+// Structs of the program
 type Song struct {
 	song   string `json:"song,omitempty"`
 	artist string `json:"artist,omitempty"`
@@ -34,30 +40,40 @@ type Song struct {
 	length int    `json:"length,omitempty"`
 }
 
-func getSongs() {
-	Song.ID = params["id"]
-	people = append(people, person)
-	json.NewEncoder(w).Encode(people)
-}
-
 func generalSearch(w http.ResponseWriter, r *http.Request) {
 	descriptor := pat.Param(r, "descriptor")
-	fmt.Fprintf(w, "Descriptor, %s!", descriptor)
+	fmt.Fprintf(w, "Descriptor, %s!\n", descriptor)
+	var queryString = "SELECT Song.song AS song, Song.artist AS artist, Gen.name AS 'genre name', Song.length AS length FROM songs AS Song INNER JOIN genres AS Gen ON Gen.ID = Song.ID WHERE (instr(lower(Song.artist), lower('" + descriptor + "'))) OR (instr(lower(Song.song), lower('" + descriptor + "'))) OR (instr(lower(Gen.name), lower('" + descriptor + "')));"
+	songs := getSongsArray(queryString)
+	fmt.Println(songs)
+	json.NewEncoder(w).Encode(songs)
 }
 
 func searchBySong(w http.ResponseWriter, r *http.Request) {
 	song := pat.Param(r, "song")
 	fmt.Fprintf(w, "Song, %s!", song)
+	var queryString = "SELECT Song.song AS song, Song.artist AS artist, Gen.name AS 'genre name', Song.length AS length FROM songs AS Song INNER JOIN genres AS Gen ON Gen.ID = Song.ID WHERE instr(lower(Song.song), lower('" + song + "'));"
+	songs := getSongsArray(queryString)
+	fmt.Println(songs)
+	json.NewEncoder(w).Encode(songs)
 }
 
 func searchByArtist(w http.ResponseWriter, r *http.Request) {
 	artist := pat.Param(r, "artist")
 	fmt.Fprintf(w, "Artist, %s!", artist)
+	var queryString = "SELECT Song.song AS song, Song.artist AS artist, Gen.name AS 'genre name', Song.length AS length FROM songs AS Song INNER JOIN genres AS Gen ON Gen.ID = Song.ID WHERE instr(lower(Song.artist), lower('" + artist + "'));"
+	songs := getSongsArray(queryString)
+	fmt.Println(songs)
+	json.NewEncoder(w).Encode(songs)
 }
 
 func searchByGenre(w http.ResponseWriter, r *http.Request) {
 	genre := pat.Param(r, "genre")
 	fmt.Fprintf(w, "Genre, %s!", genre)
+	var queryString = "SELECT Song.song AS song, Song.artist AS artist, Gen.name AS 'genre name', Song.length AS length FROM songs AS Song INNER JOIN genres AS Gen ON Gen.ID = Song.ID WHERE instr(lower(Gen.name), lower('" + genre + "'));"
+	songs := getSongsArray(queryString)
+	fmt.Println(songs)
+	json.NewEncoder(w).Encode(songs)
 }
 
 func main() {
@@ -70,37 +86,63 @@ func main() {
 	http.ListenAndServe("localhost:8000", mux)
 }
 
-func connectToDB() {
+// Establishes a connection with a DataBase
+func connectToDB(pDBDriver string, pDBName string) (db *sql.DB) {
+	// It is not possible to connect to "https://s3.amazonaws.com/bv-challenge/jrdd.db"
 	//db, err := sql.Open("sqlite3", "https://s3.amazonaws.com/bv-challenge/jrdd.db")
-	db, err := sql.Open("sqlite3", "jrdd.db")
+	db, err := sql.Open(pDBDriver, pDBName)
 	checkErr(err)
+	return db
+}
 
+// Receives a query string and return the query result
+func doQuery(db *sql.DB, pQueryString string) *sql.Rows {
 	// query
-	rows, err := db.Query("SELECT Song.song AS song, Song.artist AS artist, Gen.name AS 'genre name', Song.length AS length FROM songs AS Song INNER JOIN genres AS Gen ON Gen.ID = Song.ID WHERE (instr(lower(Song.artist), lower('rock'))) OR (instr(lower(Song.song), lower('rock'))) OR (instr(lower(Gen.name), lower('rock')));")
+	rows, err := db.Query(pQueryString)
 	checkErr(err)
+	return rows
+}
 
-	var song string
-	var artist string
-	var genre string
-	var length int
+// Returns an array with the founded songs
+func getSongsArray(pQueryString string) []Song {
+	var songs []Song
+	db = connectToDB("sqlite3", "jrdd.db")
 
-	for rows.Next() {
-		err = rows.Scan(&song, &artist, &genre, &length)
-		checkErr(err)
-		fmt.Println(song)
-		fmt.Println(artist)
-		fmt.Println(genre)
-		fmt.Println(length)
+	if checkDBErr(db) {
+		rows := doQuery(db, pQueryString)
+
+		for rows.Next() {
+			var newSong Song
+			err := rows.Scan(&newSong.song, &newSong.artist, &newSong.genre, &newSong.length)
+			checkErr(err)
+			fmt.Println(newSong.song)
+			fmt.Println(newSong.artist)
+			fmt.Println(newSong.genre)
+			fmt.Println(newSong.length)
+			fmt.Println("--------------\n")
+
+			songs = append(songs, newSong)
+		}
+
+		rows.Close()
 	}
-
-	rows.Close() //good habit to close
 
 	db.Close()
 
+	return songs
 }
 
+// Checks if an error exists
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// Checks if an error exists when a db connection is trying to be established
+func checkDBErr(db *sql.DB) bool {
+	if db != nil {
+		return true
+	}
+	return false
 }
