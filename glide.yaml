@@ -1,0 +1,8 @@
+package: github.com/wugalde19/BVChallenge
+import:
+- package: github.com/mattn/go-sqlite3
+  version: v1.2.0
+- package: goji.io
+  version: v1.0
+  subpackages:
+  - pat
