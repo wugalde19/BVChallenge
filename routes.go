@@ -44,4 +44,10 @@ var routes = Routes{
 		"/genreslist",
 		getGenresList,
 	},
+	Route{
+		"Songs by Length",
+		"GET",
+		"/songsbylength/:min&max",
+		getSongsByLength,
+	},
 }

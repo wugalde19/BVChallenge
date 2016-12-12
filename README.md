@@ -64,3 +64,24 @@ statements
         of tdm64-gcc-5.1.0-2 or another lib installation.
 
 
+# -------------------------------------------
+# Here are some routes to test the program
+# -------------------------------------------
+
+## General Search (filters by song, artist and genre)
+localhost:8000/generalsearch/Rock
+
+## Search by Song 
+localhost:8000/searchbysong/Jude
+
+## Search by Artist
+localhost:8000/searchbyartist/Santana
+
+## Search by Genre
+localhost:8000/searchbygenre/Rock
+
+## Songs By Length
+localhost:8000/songsbylength/min=200&max=240
+
+## List of genres
+localhost:8000/genreslist

@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 	"goji.io/pat"
@@ -50,7 +50,15 @@ func getGenresList(w http.ResponseWriter, r *http.Request) {
 	var queryString = "SELECT Gen.name AS 'genre', Count(1) AS 'Number of Songs', SUM(Son.length) AS 'Total Length' FROM songs AS Son INNER JOIN genres AS Gen ON Gen.ID = Son.genre GROUP BY Son.genre;"
 	genresList := getGenresListArray(queryString)
 	json.NewEncoder(w).Encode(genresList)
+}
 
+func getSongsByLength(w http.ResponseWriter, r *http.Request) {
+	parameters := strings.Split(pat.Param(r, "min&max"), "&")
+	min := strings.Split(parameters[0], "=")[1]
+	max := strings.Split(parameters[1], "=")[1]
+	var queryString = "SELECT Son.song, Son.length FROM songs AS Son INNER JOIN genres AS Gen ON Gen.ID = Son.genre WHERE (length >= " + min + ") AND (Son.length <= " + max + ") ORDER BY Son.length ASC;"
+	songsByLength := getSongsByLengthArray(queryString)
+	json.NewEncoder(w).Encode(songsByLength)
 }
 
 // Returns an array with the founded songs
@@ -70,11 +78,11 @@ func getSongsArray(pQueryString string) []Song {
 		for rows.Next() {
 			err := rows.Scan(&vSong, &vArtist, &vGenre, &vLength)
 			checkErr(err)
-			fmt.Println(vSong)
+			/*fmt.Println(vSong)
 			fmt.Println(vArtist)
 			fmt.Println(vGenre)
 			fmt.Println(vLength)
-			fmt.Println("--------------\n")
+			fmt.Println("--------------\n")*/
 
 			newSong := Song{Song: vSong, Artist: vArtist, Genre: vGenre, Length: vLength}
 			songs = append(songs, newSong)
@@ -83,6 +91,35 @@ func getSongsArray(pQueryString string) []Song {
 	}
 	db.Close()
 	return songs
+}
+
+// Returns an array with the songs with a length into the
+// range of the min and max entered values
+func getSongsByLengthArray(pQueryString string) []SongByLength {
+	var songsByLength []SongByLength
+
+	db = connectToDB("sqlite3", "jrdd.db")
+
+	if checkDBErr(db) {
+		rows := doQuery(db, pQueryString)
+
+		var vSong string
+		var vLength int
+
+		for rows.Next() {
+			err := rows.Scan(&vSong, &vLength)
+			checkErr(err)
+			/*fmt.Println(vSong)
+			fmt.Println(vLength)
+			fmt.Println("--------------\n")*/
+
+			newSong := SongByLength{Song: vSong, Length: vLength}
+			songsByLength = append(songsByLength, newSong)
+		}
+		rows.Close()
+	}
+	db.Close()
+	return songsByLength
 }
 
 // Returns an array with the genres list
@@ -101,10 +138,10 @@ func getGenresListArray(pQueryString string) Genres {
 		for rows.Next() {
 			err := rows.Scan(&vGenre, &vNumberOfSongs, &vTotalLength)
 			checkErr(err)
-			fmt.Println(vGenre)
+			/*fmt.Println(vGenre)
 			fmt.Println(vNumberOfSongs)
 			fmt.Println(vTotalLength)
-			fmt.Println("--------------\n")
+			fmt.Println("--------------\n")*/
 
 			newGenre := GenreList{Genre: vGenre, NumOfSongs: vNumberOfSongs, TotalLength: vTotalLength}
 			genres = append(genres, newGenre)

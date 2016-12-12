@@ -11,6 +11,12 @@ type Song struct {
 type Songs []Song
 
 //-----------------------------------------------------------
+type SongByLength struct {
+	Song   string `json:"song,omitempty"`
+	Length int    `json:"length,omitempty"`
+}
+
+//-----------------------------------------------------------
 type GenreList struct {
 	Genre       string `json:"genre,omitempty"`
 	NumOfSongs  int    `json:"number_of_songs,omitempty"`
