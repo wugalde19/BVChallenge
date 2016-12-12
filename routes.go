@@ -38,4 +38,10 @@ var routes = Routes{
 		"/searchbygenre/:genre",
 		searchByGenre,
 	},
+	Route{
+		"List of Genres",
+		"GET",
+		"/genreslist",
+		getGenresList,
+	},
 }
